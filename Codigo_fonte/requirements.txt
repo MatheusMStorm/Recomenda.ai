@@ -1,0 +1,6 @@
+pandas
+numpy
+scikit-fuzzy
+nltk
+fuzzywuzzy
+python-Levenshtein
