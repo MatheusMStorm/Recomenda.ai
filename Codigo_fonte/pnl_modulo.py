@@ -1,7 +1,8 @@
-import nltk ''' biblioteca PNL'''
-import string ''' manipução dos textos'''
-import re ''' buscar ou extrair padrões'''
-import numpy as np ''' manipução numerica'''
-from sklearn.feature_extraction.text import TfidfVectorizer ''' transforma os textos em vetor'''
-from nltk.corpus import stopwords ''' reduz os ruidos das frases'''
-from nltk.stem import RSLPStemmer ''' reduz palavras para o entendimento'''
+import nltk """ biblioteca PNL"""
+import string """ manipução dos textos"""
+import re """ buscar ou extrair padrões"""
+import numpy as np """ manipução numerica"""
+from sklearn.feature_extraction.text import TfidfVectorizer """ transforma os textos em vetor"""
+from nltk.corpus import stopwords """ reduz os ruidos das frases"""
+from nltk.stem import RSLPStemmer """ reduz palavras para o entendimento"""
+

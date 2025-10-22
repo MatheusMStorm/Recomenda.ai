@@ -4,3 +4,5 @@ scikit-fuzzy
 nltk
 fuzzywuzzy
 python-Levenshtein
+requests
+time
