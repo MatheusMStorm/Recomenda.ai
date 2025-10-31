@@ -1,11 +1,14 @@
 import requests
 import pandas as pd
 import time
+from dotenv import load_dotenv
 import os
 
-BEARER_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI4MDliNWJkYTgzOTM0NTI1ODJjMzE2MzkzMGNlMWNjOCIsIm5iZiI6MTc2MTMyNDgzMi43MTQsInN1YiI6IjY4ZmJhZjIwYmU1YzBlM2MyMDVhMzc0OCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.rycIn7HEAle3apAny8cWLSaR1ulAwyWKOzkg_vOmfUQ" #TokenTMDB
-API_KEY = "809b8bdaa8393452582c3163930ce1cc8" #ChaveTMDB
-BASE_URL = "https://api.themoviedb.org/3"
+load_dotenv()
+
+BEARER_TOKEN = os.getenv("BEARER_TOKEN")
+API_KEY = os.getenv("API_KEY")
+BASE_URL = os.getenv("BASE_URL")
 
 DATA_FOLDER = "Data"
 MOVIELENS_LINKS_FILE = os.path.join(DATA_FOLDER, "links.csv")
