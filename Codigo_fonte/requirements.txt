@@ -1,8 +1,12 @@
 pandas
 numpy
 scikit-fuzzy
+scikit-surprise
 nltk
 fuzzywuzzy
 python-Levenshtein
 requests
 time
+os
+re 
+python
