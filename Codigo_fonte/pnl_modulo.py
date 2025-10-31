@@ -5,10 +5,12 @@ from nltk.corpus import stopwords # reduz os ruidos das frases"""
 from nltk.stem import RSLPStemmer # reduz palavras para o entendimento"""
 from sklearn.feature_extraction.text import TfidfVectorizer # transforma os textos em vetor"""
 from sklearn.metrics.pairwise import cosine_similarity # Para calcular a similaridade
+from sklearn.decomposition import TruncatedSVD #reduz a dimensão dos dados
 import pickle # Para salvar o modelo
 import os # Para lidar com caminhos de arquivo
 import string #  manipulação dos textos"""
 import numpy as np #  manipução numerica"""
+
 
 
 DATA_FILE = os.path.join("Data", "filmes.csv") #Modelo
@@ -61,27 +63,48 @@ def criar_features_de_texto(df): #Combina colunas de texto (sinopse, generos, et
     print("Features de texto criadas com sucesso.")
     return df
 
-def treinar_e_salvar_modelo(): #Função principal: Carrega, processa, treina o modelo TF-IDF, calcula a similaridade de cosseno e salva o modelo final.
-    filmes_df = carregar_dados()
+def treinar_e_salvar_modelo():
+       # Função OTIMIZADA: Carrega, processa, aplica TF-IDF e
+  #  USA REDUÇÃO DE DIMENSIONALIDADE (SVD) para salvar uma matriz leve.
+    
+    filmes_df = carregar_dados() 
     if filmes_df is None:
         return
         
-    filmes_df = criar_features_de_texto(filmes_df)
-    print("Iniciando vetorização TF-IDF...") 
-    tfidf_vectorizer = TfidfVectorizer(max_features=5000) # Limita as 5000 palavras mais frequentes
-    tfidf_matrix = tfidf_vectorizer.fit_transform(filmes_df['feature_pnl']) # Transforma em uma matriz numérica
-    print("Matriz TF-IDF criada.")
-    print("Calculando similaridade de cosseno...")
-    cosine_sim_matrix = cosine_similarity(tfidf_matrix, tfidf_matrix) # Matriz que compara cada filme com todos os outros
-    print("Matriz de similaridade calculada.")
-
-    movie_indices = pd.Series(filmes_df.index, index=filmes_df['movieId']).drop_duplicates() # Define o mapeamento do 'movieId' para o índice da matriz (0, 1, 2...)
-    os.makedirs("Modelos", exist_ok=True) # Garante que a pasta 'Modelos' exista antes de salvar 
-    modelo_pnl_data = { # Salva os componentes essenciais para o recomendador
-        'cosine_sim_matrix': cosine_sim_matrix,
+    filmes_df = criar_features_de_texto(filmes_df) # Combina sinopse, gênero, etc., em 'feature_pnl'
+    
+    print("Iniciando vetorização TF-IDF...")
+    
+    # Cria o vetorizador. limita o "dicionário" às 5000 palavras mais importantes
+    tfidf_vectorizer = TfidfVectorizer(max_features=5000)
+    
+    # Treina o TF-IDF e transforma os textos em uma matriz numérica
+    tfidf_matrix = tfidf_vectorizer.fit_transform(filmes_df['feature_pnl'])
+    print(f"Matriz TF-IDF criada. Shape: {tfidf_matrix.shape}")
+    print("Iniciando Redução de Dimensionalidade (TruncatedSVD)...")
+    n_components = 100 
+    svd = TruncatedSVD(n_components=n_components, random_state=42)
+    
+    # Treina o SVD e transforma a matriz TF-IDF (9622x5000)
+    # em uma Matriz Latente (9622x100)
+    latent_matrix = svd.fit_transform(tfidf_matrix)
+    
+    print(f"Matriz Latente criada. Shape: {latent_matrix.shape}")
+    
+    # Define o mapeamento do 'movieId' para o índice da matriz (0, 1, 2...)
+    movie_indices = pd.Series(filmes_df.index, index=filmes_df['movieId']).drop_duplicates()
+    
+    os.makedirs("Modelos", exist_ok=True) 
+    
+    # Cria o dicionário que será salvo.
+    modelo_pnl_data = {
+        'latent_matrix': latent_matrix, # A matriz (9622 x 100)
         'movie_indices': movie_indices
     }
+    
+    # Abre o arquivo de modelo em modo 'write binary' (wb)
     with open(MODEL_FILE, 'wb') as f:
+        # Usa o pickle para "despejar" (dump) o dicionário no arquivo
         pickle.dump(modelo_pnl_data, f)
         
     print(f"Modelo PNL salvo com sucesso em '{MODEL_FILE}'!")
