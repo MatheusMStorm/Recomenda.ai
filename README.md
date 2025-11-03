@@ -77,4 +77,4 @@ Codigo_fonte/: Contém todos os artefatos, scripts de inicialização e o requir
 
 poster/: Contém o poster da apresentação detalhando a arquitetura, estratégia e algoritmos utilizados.
 
-Tag EntregaA3: O repositório será marcado com esta tag no commit final para a entrega.
+Tag EntregaA3: O repositório será marcado com esta tag no commit final para a entrega. Prazo final: TBD
