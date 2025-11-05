@@ -54,7 +54,7 @@ def criar_features_de_texto(df): #Combina colunas de texto (sinopse, generos, et
     df['diretor_limpo'] = df['diretor'].apply(lambda x: " ".join(x.split('|')))
     df['atores_limpo'] = df['atores'].apply(lambda x: " ".join(x.split('|')))
     df['feature_pnl'] = (
-        df['sinopse_limpa'] * 3 + " " +  # Sinopse tem maior peso
+        df['sinopse_limpa'] * 3 + " " + # Sinopse tem maior peso
         df['generos_limpo'] * 2 + " " + # Gêneros tem peso médio
         df['diretor_limpo'] + " " +     # Diretor tem peso normal
         df['atores_limpo']              # Atores tem peso normal
@@ -85,8 +85,8 @@ def treinar_e_salvar_modelo():
     n_components = 100 
     svd = TruncatedSVD(n_components=n_components, random_state=42)
     
-    # Treina o SVD e transforma a matriz TF-IDF (9622x5000)
-    # em uma Matriz Latente (9622x100)
+    # Treina o SVD e transforma a matriz TF-IDF (9742x5000)
+    # em uma Matriz Latente (9742x100)
     latent_matrix = svd.fit_transform(tfidf_matrix)
     
     print(f"Matriz Latente criada. Shape: {latent_matrix.shape}")
@@ -98,7 +98,7 @@ def treinar_e_salvar_modelo():
     
     # Cria o dicionário que será salvo.
     modelo_pnl_data = {
-        'latent_matrix': latent_matrix, # A matriz (9622 x 100)
+        'latent_matrix': latent_matrix, # A matriz (9742 x 100)
         'movie_indices': movie_indices
     }
     
