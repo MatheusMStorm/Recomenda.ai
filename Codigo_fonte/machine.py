@@ -70,7 +70,7 @@ if __name__ == "__main__":
     if modelo_final: 
         print("\n--- Exemplo de Previsão com o Modelo Otimizado ---")
         usuario_teste = 1
-        filme_teste = 532
+        filme_teste = 783
         previsao = modelo_final.predict(uid = usuario_teste, iid = filme_teste)
 
         print(f"Usuário: {previsao.uid}")

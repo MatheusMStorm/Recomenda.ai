@@ -84,4 +84,6 @@ if __name__ == "__main__":
     else:
         print("Testes não executados pois modelo não foi carregado.") 
 
-#Carregar Dados, criar as funções,Fornecer funções de utilidade para pesquisar filmes e encontrar similares baseado no PNL
+
+#Carregar Dados, criar as funções,Fornecer funções de 
+# utilidade para pesquisar filmes e encontrar similares baseado no PNL
