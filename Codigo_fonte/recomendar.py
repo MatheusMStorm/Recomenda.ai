@@ -168,7 +168,7 @@ def recomendar_filmes(user_id, tempo_disponivel, filmes_df, df_usuarios, modelo_
             # 1. TENTA LER A DURAÇÃO
             #   Se o nome da coluna (ex: 'runtime') estiver errado,
             #   ele vai pular para 'except KeyError'.
-            duracao = movie_data['runtime'] 
+            duracao = movie_data['duracao'] 
             
             # 2. VERIFICA O TEMPO
             #   Se o tempo for maior, ele pula.
@@ -208,7 +208,7 @@ def recomendar_filmes(user_id, tempo_disponivel, filmes_df, df_usuarios, modelo_
 
         recomendacoes.append({
             'movieId': movie_id,
-            'titulo': movie_data['title'],
+            'titulo': movie_data['titulo'],
             'prioridade_fuzzy': prioridade,
             'nota_prevista_cf': nota_prevista,
             'duracao_min': duracao
@@ -282,7 +282,7 @@ if __name__ == "__main__":
         else:
             print("\n--- TESTE FALHOU ---")
             print("Não foi possível carregar os modelos e dados (CF/Fuzzy/CSVs).")
-    
+
 
 #combinar os resultados dos três modelos (PNL, ML, Fuzzy) para gerar a recomendação 
 #Carregar os modelos, criar as funções, fazer refinamento

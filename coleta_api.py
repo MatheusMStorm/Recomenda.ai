@@ -35,7 +35,10 @@ def buscar_detalhes_filme(movie_id_movielens, tmdb_id): #Busca na chave
 
         generos = [g['name'] for g in data.get('genres', [])]
         generos_str = "|".join(generos)
-        duracao = data.get('duracao', 0)
+        
+        duracao = data.get('runtime', 0)
+        if duracao is None:
+            duracao = 0
 
         cast = [c['name'] for c in data.get('credits', {}).get('cast', [])[:5]]
         atores_str = "|".join(cast)
@@ -103,7 +106,7 @@ def iniciar_coleta():
     if lista_de_filmes_final: 
         df_filmes = pd.DataFrame(lista_de_filmes_final)
 
-        colunas_ordenadas = ['movieId', 'titulo', 'sinopse', 'generos', 'diretor', 'atores', 'tmdbId']
+        colunas_ordenadas = ['movieId', 'titulo', 'sinopse', 'generos', 'duracao', 'diretor', 'atores', 'tmdbId']
         df_filmes = df_filmes[colunas_ordenadas]
 
         df_filmes.to_csv(OUTPUT_FILE, index=False, encoding='utf-8')
