@@ -8,7 +8,7 @@ load_dotenv()
 
 BEARER_TOKEN = os.getenv("BEARER_TOKEN")
 API_KEY = os.getenv("API_KEY")
-BASE_URL = os.getenv("BASE_URL")
+BASE_URL = https://api.themoviedb.org/3
 
 DATA_FOLDER = "Data"
 MOVIELENS_LINKS_FILE = os.path.join(DATA_FOLDER, "links.csv")
