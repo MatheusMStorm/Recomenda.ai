@@ -84,6 +84,7 @@ def testar_sistema(simulacao_fuzzy, nota, tempo):
 if __name__ == "__main__":
     print("Executando 'fuzzy_modulo.py' para definir e salvar o sistema...")
     sistema_sim = definir_e_salvar_sistema_fuzzy()
+    
     print("\n--- Executando Testes de Simulação ---")
     
     # Teste 1: Filme ótimo (4.5), tempo curto (30 min) -> Deve dar prioridade ALTA
