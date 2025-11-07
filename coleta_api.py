@@ -1,3 +1,4 @@
+import http
 import requests
 import pandas as pd
 import time
@@ -8,7 +9,7 @@ load_dotenv()
 
 BEARER_TOKEN = os.getenv("BEARER_TOKEN")
 API_KEY = os.getenv("API_KEY")
-BASE_URL = https://api.themoviedb.org/3
+BASE_URL = "https://api.themoviedb.org/3"
 
 DATA_FOLDER = "Data"
 MOVIELENS_LINKS_FILE = os.path.join(DATA_FOLDER, "links.csv")
@@ -34,6 +35,7 @@ def buscar_detalhes_filme(movie_id_movielens, tmdb_id): #Busca na chave
 
         generos = [g['name'] for g in data.get('genres', [])]
         generos_str = "|".join(generos)
+        duracao = data.get('duracao', 0)
 
         cast = [c['name'] for c in data.get('credits', {}).get('cast', [])[:5]]
         atores_str = "|".join(cast)
@@ -51,6 +53,7 @@ def buscar_detalhes_filme(movie_id_movielens, tmdb_id): #Busca na chave
             'titulo': titulo,
             'sinopse': sinopse,
             'generos': generos_str,
+            'duracao': duracao,
             'diretor': diretor,
             'atores': atores_str,
             'tmdbId': tmdb_id
