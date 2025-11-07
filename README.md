@@ -51,26 +51,27 @@ Estes scripts preparam os dados e treinam os modelos de IA, salvando os artefato
 
 Coleta de Dados (Opcional, se filmes.csv não existir):
 
-# 1. Coleta os dados da API do TMDB
+## 1. Coleta os dados da API do TMDB
 python3 coleta_api.py
 
 Treinamento dos Modelos:
 
-# 2. Treina o modelo de Similaridade de Conteúdo (PNL)
+## 2. Treina o modelo de Similaridade de Conteúdo (PNL)
 python3 Codigo_fonte/pnl_modulo.py
 
-# 3. Define e salva o sistema de Lógica Fuzzy
+## 3. Define e salva o sistema de Lógica Fuzzy
 python3 Codigo_fonte/fuzzy_modulo.py
 
-# 4. Treina o modelo de Filtragem Colaborativa (ML)
+## 4. Treina o modelo de Filtragem Colaborativa (ML)
 python3 Codigo_fonte/machine.py
 
-3. Executar a Aplicação Principal
+## 5. Executar a Aplicação Principal
 Para iniciar a interface gráfica (GUI) e interagir com o sistema de recomendação (usando o Streamlit):
 
 streamlit run Codigo_fonte/Simple_gui.py
 
-📦 Estrutura de Entrega (Requisitos da A3)
+## 📦 Estrutura de Entrega (Requisitos da A3)
+
 Este repositório segue os requisitos de entrega da A3:
 
 Codigo_fonte/: Contém todos os artefatos, scripts de inicialização e o requirements.txt.
