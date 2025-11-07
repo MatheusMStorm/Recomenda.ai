@@ -4,13 +4,14 @@ import os
 import numpy as np
 import busca_filme
 from skfuzzy import control as ctrl
+from surprise import SVD, Dataset, Reader
 
 
 # --- Passo 1: Definição dos Caminhos ---
 
 # Define constantes globais (variáveis) que apontam para os arquivos
 # de dados e os OUTROS DOIS modelos que este script precisa carregar.
-FILMES_FILE = os.path.join("Data", "filmes.csv")
+FILMES = os.path.join("Data", "filmes.csv")
 USUARIOS_FILE = os.path.join("Data", "usuarios.csv")
 CF_MODEL_FILE = os.path.join("Modelos", "modelo_colaborativo.pkl")
 FUZZY_MODEL_FILE = os.path.join("Modelos", "fuzzy_control_system.pkl")
@@ -29,7 +30,7 @@ def carregar_modelos_e_dados_principais():
     
     try:
         # 1. Carrega os dados brutos
-        filmes_df = pd.read_csv(FILMES_FILE, index_col='movieId')
+        filmes_df = pd.read_csv(FILMES, index_col='movieId')
         df_usuarios = pd.read_csv(USUARIOS_FILE)
         
         # 2. Carrega o modelo de Machine Learning (Filtragem Colaborativa)
@@ -120,19 +121,11 @@ def recomendar_filmes(user_id, tempo_disponivel, filmes_df, df_usuarios, modelo_
     """
     
     # --- Passo 4.1: Setup do Usuário ---
-    # Coleta informações básicas sobre o histórico do usuário.
     print("\nIniciando processo de recomendação...")
     try:
         user_data = df_usuarios[df_usuarios['userId'] == user_id]
-        
-        # 1. Cria um 'set' de TODOS os filmes que o usuário já viu
         seen_movie_ids = set(user_data['movieId'])
-        
-        # 2. Cria um 'set' apenas dos filmes "favoritos" (nota >= 4.5)
-        # Estes serão usados para alimentar o PNL (Lista B)
         favorite_movie_ids = set(user_data[user_data['rating'] >= 4.5]['movieId'])
-        
-        # 3. Cria um 'set' de TODOS os filmes que ele NÃO VIU
         all_movie_ids = set(filmes_df.index)
         unseen_movie_ids = all_movie_ids - seen_movie_ids
         
@@ -141,84 +134,78 @@ def recomendar_filmes(user_id, tempo_disponivel, filmes_df, df_usuarios, modelo_
             
     except Exception as e:
         print(f"Erro ao processar dados do usuário {user_id}: {e}")
-        return pd.DataFrame() # Retorna um DataFrame vazio se falhar
+        return pd.DataFrame() 
 
     # --- Passo 4.2: Gerar Lista A (CF) ---
-    # Chama a função para obter o dicionário de notas previstas
-    # Ex: {101: 4.5, 102: 3.1, ...}
     cf_scores_map = get_lista_a_cf(modelo_cf, user_id, unseen_movie_ids)
     
     # --- Passo 4.3: Gerar Lista B (PNL) ---
-    # Chama a função para obter o conjunto de filmes similares aos favoritos
-    # Ex: {55, 101, 230, ...}
     pnl_candidates_set = get_lista_b_pnl(favorite_movie_ids, num_recs_per_movie=25)
 
     # --- Passo 4.4: Hibridização (Blend) ---
-    # Combina as duas listas para formar a lista final de candidatos.
-    
-    # Pega os IDs de filmes da Lista A (as chaves do dicionário)
     cf_candidates_set = set(cf_scores_map.keys())
-    
-    # "Une" a Lista A e a Lista B. Remove duplicatas automaticamente.
     candidate_ids = cf_candidates_set.union(pnl_candidates_set)
-    
-    # Filtro final: Garante que não vamos recomendar nada já visto
     candidate_ids = candidate_ids - seen_movie_ids
     
     print(f"Listas combinadas. Total de {len(candidate_ids)} candidatos únicos para ranquear.")
 
     # --- Passo 4.5: Filtro (Tempo) e Refinamento (Fuzzy) ---
-    # Este é o loop principal de pontuação.
-    # Itera sobre cada filme da lista híbrida.
-    
-    # Prepara a simulação do sistema Fuzzy (que usaremos dentro do loop)
     simulacao_fuzzy = ctrl.ControlSystemSimulation(fuzzy_sistema)
     recomendacoes = []
+    
+    # --- CONTADORES DE DEBUG ---
+    cont_sucesso = 0
+    cont_falha_key = 0
+    cont_falha_type = 0
+    cont_falha_tempo = 0
 
-    print("Iniciando filtragem por tempo e ranqueamento Fuzzy...")
+    print("Iniciando filtragem por tempo e ranqueamento Fuzzy (MODO DEBUG)...")
     for movie_id in candidate_ids:
         
-        # --- FILTRO RÍGIDO (TEMPO) ---
-        # Um 'try/except' é usado para evitar erros se um filme
-        # não tiver 'runtime' ou o dado for inválido (NaN).
         try:
             movie_data = filmes_df.loc[movie_id]
-            # ** IMPORTANTE: Mude 'runtime' se o nome da sua coluna for outro
-            duracao = movie_data['runtime']
             
-            # Se o filme for mais longo que o tempo do usuário,
-            # 'continue' pula para o próximo filme do loop.
+            # 1. TENTA LER A DURAÇÃO
+            #   Se o nome da coluna (ex: 'runtime') estiver errado,
+            #   ele vai pular para 'except KeyError'.
+            duracao = movie_data['runtime'] 
+            
+            # 2. VERIFICA O TEMPO
+            #   Se o tempo for maior, ele pula.
             if duracao > tempo_disponivel:
+                cont_falha_tempo += 1
                 continue 
-                
+            
+            # 3. Se chegou aqui, o filme passou no filtro de tempo E a coluna 'runtime' existe
+            
         except KeyError:
-            continue # Pula se o movieId não for encontrado no filmes_df
+            # Esta exceção pega:
+            # 1. 'movie_id' não encontrado em filmes_df (raro)
+            # 2. A COLUNA 'runtime' não foi encontrada (MUITO PROVÁVEL)
+            cont_falha_key += 1
+            continue 
         except (TypeError, ValueError):
-            continue # Pula se a 'runtime' for um valor inválido
+            # Esta exceção pega:
+            # 1. Dados inválidos (NaN, '120 min', None) na coluna 'runtime' (MUITO PROVÁVEL)
+            cont_falha_type += 1
+            continue
 
         # --- REFINAMENTO (CF + FUZZY) ---
-        # Se o filme passou no filtro de tempo, ele é pontuado.
+        # Se o filme passou por todos os 'try/except', ele é pontuado.
         
-        # 1. Pega a nota prevista (da Lista A / CF)
         nota_prevista = cf_scores_map.get(movie_id)
         if nota_prevista is None:
-            # Isso pode acontecer se um filme veio SÓ do PNL
-            # e não estava na lista 'unseen_movie_ids' (raro).
             continue 
             
-        # 2. Alimenta o Sistema Fuzzy
-        # Define as duas entradas:
         simulacao_fuzzy.input['nota_prevista'] = nota_prevista
         simulacao_fuzzy.input['tempo_disponivel'] = tempo_disponivel
         
-        # 3. Calcula a Prioridade
         try:
             simulacao_fuzzy.compute()
-            prioridade = simulacao_fuzzy.output['prioridade_final'] # Saída (ex: 85.0)
+            prioridade = simulacao_fuzzy.output['prioridade_final']
         except ValueError:
-            prioridade = 0 # Ignora se o fuzzy falhar
+            prioridade = 0 
 
-        # 4. Adiciona o filme qualificado à lista final
         recomendacoes.append({
             'movieId': movie_id,
             'titulo': movie_data['title'],
@@ -226,40 +213,28 @@ def recomendar_filmes(user_id, tempo_disponivel, filmes_df, df_usuarios, modelo_
             'nota_prevista_cf': nota_prevista,
             'duracao_min': duracao
         })
+        cont_sucesso += 1 # Conta como um sucesso
 
     # --- Passo 4.6: Classificar e Retornar ---
-    # Converte a lista de dicionários em um DataFrame do Pandas
+    
+    # --- IMPRIME O RELATÓRIO DE DEBUG ---
+    print("\n--- RELATÓRIO DE DIAGNÓSTICO ---")
+    print(f"Filmes que passaram nos filtros: {cont_sucesso}")
+    print(f"Filmes filtrados por Tempo.....: {cont_falha_tempo}")
+    print(f"Filmes filtrados por KeyError..: {cont_falha_key} (Verifique o NOME da coluna 'runtime')")
+    print(f"Filmes filtrados por TypeError.: {cont_falha_type} (Verifique DADOS INVÁLIDOS (NaN) na coluna 'runtime')")
+    print("---------------------------------")
+    
     if not recomendacoes:
         print("Nenhuma recomendação encontrada após aplicar todos os filtros.")
         return pd.DataFrame()
         
     df_recs = pd.DataFrame(recomendacoes)
-    
-    # Ordena o DataFrame pela 'prioridade_fuzzy' (da maior para a menor)
     df_recs = df_recs.sort_values(by='prioridade_fuzzy', ascending=False)
     
-    # Retorna o DataFrame final, pronto para ser exibido
     return df_recs
 
-# --- Passo 5: Verificação de Segurança na Importação ---
-
-# Este bloco 'if/else' NÃO está dentro de uma função.
-# Ele é executado UMA ÚNICA VEZ, no momento em que 'recomendar.py' é importado.
-
-# Ele verifica se o módulo PNL (crítico) foi carregado com sucesso pelo 'busca_filme'
-if busca_filme.MATRIZ_LATENTE is None:
-    # Se falhou, imprime um erro fatal. O sistema não pode funcionar.
-    print("="*50)
-    print("ERRO FATAL: Modelo PNL (de 'busca_filmes.py') não foi carregado.")
-    print("O script 'recomendar.py' não pode funcionar.")
-    print("Execute 'pnl_modulo.py' primeiro e verifique os caminhos.")
-    print("="*50)
-else:
-    # Se teve sucesso, imprime uma mensagem de confirmação.
-    print("\nMódulo 'recomendar.py' carregado.")
-    print("-> Dependência 'busca_filmes.py' (PNL) carregada com sucesso.")
-
-
+# --- (Cole isto substituindo seu bloco if __name__ == "__main__") ---
 
 if __name__ == "__main__":
     
@@ -267,30 +242,26 @@ if __name__ == "__main__":
     print("EXECUTANDO 'recomendar.py' DIRETAMENTE PARA TESTE...")
     print("="*50)
 
-    # --- 1. Verificação de Segurança (Repetida) ---
-    # Precisamos verificar o PNL novamente, pois este bloco é o ponto de entrada
     if busca_filme.MATRIZ_LATENTE is None:
         print("TESTE FALHOU: O modelo PNL (de 'busca_filme') não foi carregado.")
     else:
-        # --- 2. Carregar os outros modelos ---
         print("Iniciando carregamento de modelos (CF, Fuzzy) e dados...")
         dados_carregados = carregar_modelos_e_dados_principais()
         
         if dados_carregados:
-            # Desempacota os objetos carregados
             filmes_df, df_usuarios, modelo_cf, fuzzy_sistema = dados_carregados
             
-            # --- 3. Definir Parâmetros de Teste ---
-            USER_ID_TESTE = 1         # Use um ID de usuário que exista em usuarios.csv
-            TEMPO_DISPONIVEL_TESTE = 240 # Ex: 90 minutos (1h 30m)
+            # --- PARÂMETROS DE TESTE ---
+            USER_ID_TESTE = 1         
+            # Define um tempo GIGANTE para desativar o filtro de tempo
+            TEMPO_DISPONIVEL_TESTE = 999 
             
             print("\n" + "="*50)
             print(f"GERANDO RECOMENDAÇÕES HÍBRIDAS PARA (TESTE):")
             print(f"  Usuário ID: {USER_ID_TESTE}")
-            print(f"  Tempo Disponível: {TEMPO_DISPONIVEL_TESTE} minutos")
+            print(f"  Tempo Disponível: {TEMPO_DISPONIVEL_TESTE} minutos (TESTE)")
             print("="*50)
 
-            # --- 4. Chamar a Função "Cérebro" ---
             recomendacoes_finais = recomendar_filmes(
                 user_id=USER_ID_TESTE,
                 tempo_disponivel=TEMPO_DISPONIVEL_TESTE,
@@ -300,11 +271,10 @@ if __name__ == "__main__":
                 fuzzy_sistema=fuzzy_sistema
             )
             
-            # --- 5. Exibir Resultados ---
             if not recomendacoes_finais.empty:
                 print("\n--- TESTE BEM-SUCEDIDO: RECOMENDAÇÕES FINAIS ---")
                 pd.set_option('display.float_format', '{:.2f}'.format)
-                print(recomendacoes_finais.head(10)) # Exibe o Top 10
+                print(recomendacoes_finais.head(10)) 
             else:
                 print("\n--- TESTE CONCLUÍDO (SEM RESULTADOS) ---")
                 print("O sistema funcionou, mas nenhum filme correspondeu a todos os critérios.")
@@ -312,7 +282,6 @@ if __name__ == "__main__":
         else:
             print("\n--- TESTE FALHOU ---")
             print("Não foi possível carregar os modelos e dados (CF/Fuzzy/CSVs).")
-            print("Verifique os caminhos em 'FILMES_FILE', 'USUARIOS_FILE', etc.")
     
 
 #combinar os resultados dos três modelos (PNL, ML, Fuzzy) para gerar a recomendação 
