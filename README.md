@@ -43,39 +43,39 @@ Certifique-se de ter o Python 3.10+ instalado.
 
 Instale todas as bibliotecas necessárias listadas no arquivo `requirements.txt`:
 
-pip install -r requirements.txt
+*pip install -r requirements.txt*
 
-2. Coleta de Dados e Treinamento dos Modelos de IA
+### 2. Coleta de Dados e Treinamento dos Modelos de IA
 
 Estes scripts preparam os dados e treinam os modelos de IA, salvando os artefatos (.pkl) na pasta Modelos. Execute-os apenas uma vez (ou sempre que os dados de origem mudarem).
 
 Coleta de Dados (Opcional, se filmes.csv não existir):
 
-## 1. Coleta os dados da API do TMDB
-python3 coleta_api.py
+## 🔧 Treinamento dos Modelos:
 
-Treinamento dos Modelos:
+## 1. Coleta os dados da API do TMDB
+*python3 coleta_api.py*
 
 ## 2. Treina o modelo de Similaridade de Conteúdo (PNL)
-python3 Codigo_fonte/pnl_modulo.py
+*python3 Codigo_fonte/pnl_modulo.py*
 
 ## 3. Define e salva o sistema de Lógica Fuzzy
-python3 Codigo_fonte/fuzzy_modulo.py
+*python3 Codigo_fonte/fuzzy_modulo.py*
 
 ## 4. Treina o modelo de Filtragem Colaborativa (ML)
-python3 Codigo_fonte/machine.py
+*python3 Codigo_fonte/machine.py*
 
 ## 5. Executar a Aplicação Principal
 Para iniciar a interface gráfica (GUI) e interagir com o sistema de recomendação (usando o Streamlit):
 
-streamlit run Codigo_fonte/Simple_gui.py
+*streamlit run Codigo_fonte/Simple_gui.py*
 
 ## 📦 Estrutura de Entrega (Requisitos da A3)
 
 Este repositório segue os requisitos de entrega da A3:
 
-Codigo_fonte/: Contém todos os artefatos, scripts de inicialização e o requirements.txt.
+*Codigo_fonte/: Contém todos os artefatos, scripts de inicialização e o requirements.txt.*
 
-poster/: Contém o poster da apresentação detalhando a arquitetura, estratégia e algoritmos utilizados.
+*poster/: Contém o poster da apresentação detalhando a arquitetura, estratégia e algoritmos utilizados.*
 
-Tag EntregaA3: O repositório será marcado com esta tag no commit final para a entrega. Prazo final: TBD
+*Tag EntregaA3: O repositório será marcado com esta tag no commit final para a entrega. Prazo final: TBD*
