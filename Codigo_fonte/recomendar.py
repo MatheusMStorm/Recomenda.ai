@@ -2,16 +2,14 @@ import pandas as pd
 import pickle
 import os
 import numpy as np
-# --- Importação relativa para busca_filme ---
 from . import busca_filme 
 from skfuzzy import control as ctrl
-from surprise import SVD, Dataset, Reader # Mantido para compatibilidade com o pickle
+from surprise import SVD, Dataset, Reader
 
 print("Carregando módulo 'recomendar.py'...")
 
-# --- Passo 1: Definição dos Caminhos ---
 FILMES_CSV = os.path.join("Data", "filmes.csv")
-USUARIOS_CSV = os.path.join("Data", "usuarios.csv") # Contém todos os ratings
+USUARIOS_CSV = os.path.join("Data", "usuarios.csv") 
 CF_MODEL_FILE = os.path.join("Modelos", "modelo_colaborativo.pkl")
 FUZZY_MODEL_FILE = os.path.join("Modelos", "fuzzy_control_system.pkl")
 
@@ -75,7 +73,7 @@ def _get_lista_a_cf(modelo_cf, user_id, unseen_movie_ids):
                 pred = modelo_cf.predict(uid=user_id, iid=movie_id)
                 predictions[movie_id] = pred.est 
             except Exception:
-                # Silenciosamente ignora erros de previsão para IDs específicos (podem ser IDs não vistos pelo modelo)
+                # Silenciosamente ignora erros de previsão para IDs específicos
                 pass
         
     print("Cálculo de previsões CF concluído.")
@@ -94,7 +92,7 @@ def _get_lista_b_pnl(favorite_movie_ids, num_recs_per_movie=25):
     
     for seed_id in favorite_movie_ids:
         # Assegura que o seed_id exista no FILMES_DF_GLOBAL antes de buscar similaridade
-        if FILMES_DF_GLOBAL is None or seed_id not in FILMES_DF_GLOBAL.index: # <-- Checagem explícita aqui
+        if FILMES_DF_GLOBAL is None or seed_id not in FILMES_DF_GLOBAL.index: 
             # print(f"AVISO: Filme favorito ID {seed_id} não encontrado no catálogo global. Pulando PNL para ele.")
             continue
 
@@ -104,7 +102,6 @@ def _get_lista_b_pnl(favorite_movie_ids, num_recs_per_movie=25):
                 top_n=num_recs_per_movie
             )
             
-            # --- TRATAMENTO ULTRA-DEFENSIVO DA SAÍDA DA BUSCA_FILME ---
             if isinstance(similars_result, (list, set)):
                 if similars_result: # Se a lista/set não for vazia
                     all_pnl_candidates.update(similars_result)
@@ -132,20 +129,14 @@ def _get_lista_b_pnl(favorite_movie_ids, num_recs_per_movie=25):
     print(f"Encontrados {len(all_pnl_candidates)} candidatos únicos via PNL.")
     return all_pnl_candidates
 
-# --- Passo 4: Função "Cérebro" de Orquestração (gerar_recomendacoes_hibridas) ---
-
 def gerar_recomendacoes_hibridas(user_id, tempo_disponivel_min, top_n=10):
     """
     Esta é a função principal que orquestra todo o processo de recomendação.
     Ela segue a arquitetura híbrida de "blend" (mistura).
-    
-    NÃO RECEBE MAIS OS MODELOS/DFS COMO ARGUMENTOS. ELES SÃO ACESSADOS GLOBALMENTE.
-    
-    Retorna: Um DataFrame Pandas com o Top N, ordenado pela prioridade.
+        Retorna: Um DataFrame Pandas com o Top N, ordenado pela prioridade.
     """
     global FILMES_DF_GLOBAL, USUARIOS_RATINGS_DF_GLOBAL, MODELO_CF_GLOBAL, FUZZY_SISTEMA_GLOBAL
 
-    # --- VERIFICAÇÃO CRÍTICA DOS RECURSOS GLOBAIS ---
     if FILMES_DF_GLOBAL is None or FILMES_DF_GLOBAL.empty:
         print("ERRO: FILMES_DF_GLOBAL não carregado ou está vazio. Não é possível gerar recomendações.")
         return pd.DataFrame()
@@ -161,25 +152,18 @@ def gerar_recomendacoes_hibridas(user_id, tempo_disponivel_min, top_n=10):
 
     print("\nIniciando processo de recomendação híbrida...")
     try:
-        # --- FILTRO DO USUÁRIO E TRATAMENTO DE AMBIGUIDADE ---
         # Garantir que a coluna 'userId' existe antes de tentar filtrar
         if 'userId' not in USUARIOS_RATINGS_DF_GLOBAL.columns:
             print(f"ERRO: Coluna 'userId' não encontrada em '{USUARIOS_CSV}'.")
             return pd.DataFrame()
 
-        # O filtro abaixo pode retornar um DataFrame vazio.
         user_ratings = USUARIOS_RATINGS_DF_GLOBAL[USUARIOS_RATINGS_DF_GLOBAL['userId'] == user_id]
-        
-        # Esta checagem de .empty é crucial e já deveria estar lá, mas a reforçamos.
         if user_ratings.empty:
             print(f"Erro: Usuário {user_id} não encontrado ou não possui avaliações em '{USUARIOS_CSV}'.")
             print("Não é possível gerar recomendações personalizadas sem dados de avaliação do usuário.")
             return pd.DataFrame()
 
         seen_movie_ids = set(user_ratings['movieId'])
-        
-        # Extração defensiva de favoritos: Garante que é um set simples de IDs
-        # Primeiro, filtrar, depois verificar se o resultado é vazio.
         favoritos_filtered = user_ratings[user_ratings['rating'] >= 4.5]
         if favoritos_filtered.empty:
             favorite_movie_ids = set()
@@ -189,7 +173,6 @@ def gerar_recomendacoes_hibridas(user_id, tempo_disponivel_min, top_n=10):
         all_movie_ids = set(FILMES_DF_GLOBAL.index)
         unseen_movie_ids = list(all_movie_ids - seen_movie_ids)
         
-        # Aviso se não houver filmes favoritos (PNL não será tão eficaz)
         if not favorite_movie_ids:
             print(f"Aviso: Usuário {user_id} não tem filmes 'favoritos' (>= 4.5). A Lista B (PNL) será vazia ou limitada.")
             
@@ -197,20 +180,16 @@ def gerar_recomendacoes_hibridas(user_id, tempo_disponivel_min, top_n=10):
         print(f"Erro ao processar dados do usuário {user_id} na fase inicial: {e}")
         return pd.DataFrame() 
 
-    # --- Passo 4.2: Gerar Lista A (CF) ---
     cf_scores_map = _get_lista_a_cf(MODELO_CF_GLOBAL, user_id, unseen_movie_ids)
     
-    # --- Passo 4.3: Gerar Lista B (PNL) ---
     pnl_candidates_set = _get_lista_b_pnl(favorite_movie_ids)
 
-    # --- Passo 4.4: Hibridização (Blend) ---
     cf_candidates_set = set(cf_scores_map.keys())
     candidate_ids = cf_candidates_set.union(pnl_candidates_set)
     candidate_ids = candidate_ids - seen_movie_ids # Remove filmes já vistos novamente
     
     print(f"Listas combinadas. Total de {len(candidate_ids)} candidatos únicos para ranquear.")
 
-    # --- Passo 4.5: Filtro (Tempo) e Refinamento (Fuzzy) ---
     # Garante que o sistema fuzzy foi carregado antes de tentar simular
     if FUZZY_SISTEMA_GLOBAL is None:
         print("ERRO: Sistema Fuzzy não carregado. Não é possível aplicar refinamento Fuzzy.")
@@ -228,13 +207,11 @@ def gerar_recomendacoes_hibridas(user_id, tempo_disponivel_min, top_n=10):
     print("Iniciando filtragem por tempo e ranqueamento Fuzzy...")
     for movie_id in candidate_ids:
         
-        # --- VERIFICAÇÃO DE EXISTÊNCIA (CRÍTICA E SEGURA) ---
+
         # Garante que o movie_id exista no índice do DataFrame GLOBAL antes de tentar .loc
         if FILMES_DF_GLOBAL is None or movie_id not in FILMES_DF_GLOBAL.index:
             cont_falha_key += 1
             continue # Pula este filme se não for encontrado ou se o DF não estiver carregado
-        
-        # Agora, podemos usar .loc[movie_id] com segurança
         movie_data_series = FILMES_DF_GLOBAL.loc[movie_id] 
 
         try:
@@ -251,7 +228,7 @@ def gerar_recomendacoes_hibridas(user_id, tempo_disponivel_min, top_n=10):
                 cont_falha_tempo += 1
                 continue 
             
-        except (ValueError, TypeError): # Captura se 'duracao_raw' não é um número válido (ex: NaN, string não numérica)
+        except (ValueError, TypeError): # Capum número válido (ex: NaN, string não numérica
             cont_falha_type += 1
             continue
         except Exception: # Captura outras exceções inesperadas
@@ -263,12 +240,11 @@ def gerar_recomendacoes_hibridas(user_id, tempo_disponivel_min, top_n=10):
         if nota_prevista is None:
             continue # Pula se não houver previsão CF
             
-        # Verificações de range para entradas Fuzzy (importante para evitar ValueError no compute())
         # Definir limites explícitos para garantir que a entrada fuzzy é válida
         min_nota = 1
         max_nota = 5
         min_tempo = 0
-        max_tempo = 200 # Ajuste este valor se o universo do seu controle fuzzy for diferente
+        max_tempo = 200
 
         if not (min_nota <= nota_prevista <= max_nota):
             # print(f"Aviso Fuzzy: Nota prevista {nota_prevista:.2f} fora do universo [{min_nota}, {max_nota}] para movieId {movie_id}. Pulando Fuzzy.")
@@ -299,8 +275,6 @@ def gerar_recomendacoes_hibridas(user_id, tempo_disponivel_min, top_n=10):
         })
         cont_sucesso += 1 
 
-    # --- Passo 4.6: Classificar e Retornar ---
-    
     print("\n--- RELATÓRIO DE DIAGNÓSTICO ---")
     print(f"Filmes que passaram nos filtros: {cont_sucesso}")
     print(f"Filmes filtrados por Tempo.....: {cont_falha_tempo}")
@@ -317,19 +291,15 @@ def gerar_recomendacoes_hibridas(user_id, tempo_disponivel_min, top_n=10):
     
     return df_recs.head(top_n) # Aplica o top_n aqui para limitar o retorno
 
-# --- Bloco de Execução Principal (para testes diretos do módulo) ---
 if __name__ == "__main__":
     
     print("\n" + "="*50)
     print("EXECUTANDO 'recomendar.py' DIRETAMENTE PARA TESTE...")
     print("="*50)
 
-    # Garante que os recursos globais foram carregados antes de testar
     if _carregar_recursos_para_recomendacao():
             
-        # --- PARÂMETROS DE TESTE ---
-        # ATENÇÃO: user_id deve ser um ID existente no seu 'usuarios.csv'
-        USER_ID_TESTE = 1 # Substitua por um userId válido do seu usuarios.csv         
+        USER_ID_TESTE = 1       
         TEMPO_DISPONIVEL_TESTE = 90
         TOP_N_TESTE = 5
         

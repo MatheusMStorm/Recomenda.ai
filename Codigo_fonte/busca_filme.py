@@ -7,7 +7,6 @@ from fuzzywuzzy import process
 
 print("Carregando módulo 'busca_filme.py'...")
 
-# --- Definição de Caminhos ---
 FILMES_CSV_PATH_BUSCA = os.path.join('Data', 'filmes.csv')
 PNL_MODEL_PATH = os.path.join('Modelos', 'pnl_similarity_model.pkl')
 
@@ -30,16 +29,13 @@ def carregar_info_busca_pnl():
             PNL_DATA = pickle.load(f)
         
         MATRIZ_LATENTE = PNL_DATA['latent_matrix']
-        INDICES_MAP = PNL_DATA['movie_indices'] # Series: movieId -> índice interno
+        INDICES_MAP = PNL_DATA['movie_indices']
         
         # 2. Carregar o DataFrame de Filmes
         FILMES_DF_BUSCA = pd.read_csv(FILMES_CSV_PATH_BUSCA)
         
         # 3. Criar o Mapa de Títulos para Fuzzy Matching
-        # Cria um Series: Título -> movieId, com drop_duplicates()
-        # O Titulos Map será o objeto que o fuzzywuzzy irá ler
         TITULOS_MAP = FILMES_DF_BUSCA.set_index('movieId')['titulo'].drop_duplicates()
-
         print("Modelos PNL e dados de filmes carregados para busca.")
         return MATRIZ_LATENTE, INDICES_MAP, TITULOS_MAP
         
@@ -64,7 +60,6 @@ def recomendar_por_similaridade(movieId_base, top_n=10):
     
     try:
         # Pega o índice interno do movieId_base
-        # É CRÍTICO GARANTIR QUE movieId_base EXISTE NO INDICES_MAP
         if movieId_base not in INDICES_MAP.index:
             # print(f"AVISO: movieId_base {movieId_base} não encontrado em INDICES_MAP para similaridade.")
             return []
@@ -82,7 +77,7 @@ def recomendar_por_similaridade(movieId_base, top_n=10):
         enumerar_dados = list(enumerate(similaridades))
         ordenar_dados = sorted(enumerar_dados, key=lambda x : x[1], reverse=True)
         
-        # Converte os índices internos de volta para movieIds originais (excluindo o filme base)
+        # Converte os índices internos de volta para movieIds originais
         indice_top = [i[0] for i in ordenar_dados[1:top_n + 1]]
         
         # Garante que os índices retornados estão presentes no INDICES_MAP antes de acessá-los
@@ -96,7 +91,7 @@ def recomendar_por_similaridade(movieId_base, top_n=10):
         return filmes_recomendados
         
     except KeyError:
-        # Erro se o movieId não existir no INDICES_MAP (já tratado acima)
+        # Erro se o movieId não existir no INDICES_MAP
         # print(f"Não foi encontrado o movieID {movieId_base} no índice PNL.")
         return []
     except Exception as e:
@@ -109,7 +104,7 @@ def encontrar_movieid_por_titulo(titulo_query, top_n=1):
     Encontra o movieId de um filme dado um título, usando correspondência aproximada.
     Retorna o movieId (se top_n=1) ou uma lista de movieIds. Retorna None/[] se não encontrar.
     """
-    if TITULOS_MAP is None or TITULOS_MAP.empty: # <-- Checagem explícita para o TITULOS_MAP
+    if TITULOS_MAP is None or TITULOS_MAP.empty: 
         return None if top_n == 1 else []
     
     # Usa fuzzywuzzy para encontrar os títulos mais próximos

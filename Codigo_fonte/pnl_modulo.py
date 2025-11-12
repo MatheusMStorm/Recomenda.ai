@@ -13,7 +13,7 @@ import numpy as np #  manipução numerica"""
 
 
 
-DATA_FILE = os.path.join("Data", "filmes.csv") #Modelo
+DATA_FILE = os.path.join("Data", "filmes.csv")
 MODEL_FILE = os.path.join("Modelos", "pnl_similarity_model.pkl")
 
 try:

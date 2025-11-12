@@ -4,8 +4,8 @@ import pandas as pd
 import time
 from dotenv import load_dotenv
 import os
-import json # Adicionado para tratamento de erros JSON
-import numpy as np # Adicionado para np.nan
+import json 
+import numpy as np 
 
 load_dotenv()
 
@@ -15,7 +15,7 @@ BASE_URL = "https://api.themoviedb.org/3"
 
 DATA_FOLDER = "Data"
 MOVIELENS_LINKS_FILE = os.path.join(DATA_FOLDER, "links.csv")
-OUTPUT_FILE = os.path.join(DATA_FOLDER, "filmes.csv") # Agora o arquivo de saída será atualizado inteligentemente
+OUTPUT_FILE = os.path.join(DATA_FOLDER, "filmes.csv") 
 
 # Variáveis globais para controle de filmes já processados
 PROCESSED_MOVIE_IDS = set()
@@ -60,8 +60,7 @@ def buscar_detalhes_filme(movie_id_movielens, tmdb_id):
     
     try: 
         response = requests.get(endpoint, headers=headers)
-        response.raise_for_status() # Levanta um HTTPError para 4xx/5xx responses
-        
+        response.raise_for_status() 
         data = response.json()
         
         # Extração de dados (campos já existentes)
@@ -76,8 +75,6 @@ def buscar_detalhes_filme(movie_id_movielens, tmdb_id):
                 diretor = member['name']
                 break
         titulo = data.get('title', '')
-        
-        # --- CAMPOS ADICIONADOS PARA COMPATIBILIDADE ---
         duracao = data.get('runtime', np.nan) # Em minutos
         data_lancamento = data.get('release_date', '')
         media_votos = data.get('vote_average', np.nan)
@@ -93,7 +90,7 @@ def buscar_detalhes_filme(movie_id_movielens, tmdb_id):
             'diretor': diretor,
             'atores': atores_str,
             'tmdbId': tmdb_id,
-            'duracao': duracao, # <--- AQUI ESTÁ!
+            'duracao': duracao,
             'data_lancamento': data_lancamento,
             'media_votos': media_votos,
             'total_votos': total_votos,
@@ -172,7 +169,6 @@ def iniciar_coleta():
                 # Se falhou, mas já existia um registro, mantemos o existente (mesmo incompleto)
                 if movie_id_movielens in filmes_existentes_dict:
                     lista_de_filmes_atualizada.append(filmes_existentes_dict[movie_id_movielens])
-                # Adiciona à lista de falhas para evitar re-tentativas no futuro (opcional, pode ser melhorado)
                 FAILED_MOVIE_IDS.add(movie_id_movielens)
 
         # Imprime o progresso

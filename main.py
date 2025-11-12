@@ -1,14 +1,11 @@
 import os
 import sys
 
-# --- Configuração do sys.path para encontrar módulos ---
-# Garante que a raiz do projeto seja adicionada ao sys.path.
 current_script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(current_script_dir) 
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
-
-# Importa os módulos usando o nome completo do pacote
+    
 import Codigo_fonte.gerenciar_usuarios 
 import Codigo_fonte.menu_terminal 
 

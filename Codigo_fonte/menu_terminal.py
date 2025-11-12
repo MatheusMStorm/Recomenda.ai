@@ -1,6 +1,5 @@
 import pandas as pd
 import os
-# --- Importações relativas para módulos dentro do mesmo pacote 'Codigo_fonte' ---
 from . import recomendar 
 from . import busca_filme 
 
@@ -11,7 +10,7 @@ FILMES_CSV_PATH = os.path.join("Data", "filmes.csv")
 USUARIOS_CSV_PATH = os.path.join("Data", "usuarios.csv") # Este é o que contém os ratings dos usuários
 
 FILMES_DF_MENU = None
-USUARIOS_RATINGS_DF_MENU = None # Renomeado para refletir que são ratings
+USUARIOS_RATINGS_DF_MENU = None 
 
 try:
     FILMES_DF_MENU = pd.read_csv(FILMES_CSV_PATH)
@@ -52,7 +51,7 @@ def exibir_recomendacoes(user_id, tempo_disponivel_min, top_n_recomendacoes):
             print(f"   Nota Prevista CF: {rec['nota_prevista_cf']:.2f}")
             
             # Busca detalhes adicionais do filme
-            if FILMES_DF_MENU is not None and not FILMES_DF_MENU.empty: # Checagem explícita
+            if FILMES_DF_MENU is not None and not FILMES_DF_MENU.empty:
                 detalhes_filme_row = FILMES_DF_MENU[FILMES_DF_MENU['movieId'] == rec['movieId']]
                 if not detalhes_filme_row.empty:
                     detalhes_filme = detalhes_filme_row.iloc[0]
@@ -74,12 +73,12 @@ def buscar_filme_e_similares():
     if titulo_busca.lower() == 'voltar':
         return
 
-    if titulo_busca and FILMES_DF_MENU is not None and not FILMES_DF_MENU.empty: # Checagem explícita
+    if titulo_busca and FILMES_DF_MENU is not None and not FILMES_DF_MENU.empty: 
         movie_id_encontrado = busca_filme.encontrar_movieid_por_titulo(titulo_busca)
         
         if movie_id_encontrado:
             filme_encontrado_row = FILMES_DF_MENU[FILMES_DF_MENU['movieId'] == movie_id_encontrado]
-            if not filme_encontrado_row.empty: # Checagem explícita
+            if not filme_encontrado_row.empty: 
                 filme_encontrado = filme_encontrado_row.iloc[0]
                 titulo_filme = filme_encontrado.get('titulo', 'N/A')
                 print(f"\nFilme encontrado: {titulo_filme} (ID: {movie_id_encontrado})") 
@@ -93,7 +92,7 @@ def buscar_filme_e_similares():
                         print(f"\nFilmes com 'DNA' similar a '{titulo_filme}':")
                         for i, mid_sim in enumerate(similares_ids):
                             filme_sim_row = FILMES_DF_MENU[FILMES_DF_MENU['movieId'] == mid_sim]
-                            if not filme_sim_row.empty: # Checagem explícita
+                            if not filme_sim_row.empty: 
                                 filme_sim = filme_sim_row.iloc[0]
                                 print(f"  {i+1}. {filme_sim.get('titulo', 'N/A')} (ID: {mid_sim})") 
                             else:
@@ -177,7 +176,6 @@ def menu_interativo(initial_user_id=None):
                 except ValueError:
                     print("Entrada inválida. Por favor, digite um número inteiro para a quantidade de filmes.")
             
-            # Se chegou aqui, tempo e num_recs são válidos
             exibir_recomendacoes(user_id, tempo, num_recs)
         elif escolha == '2':
             buscar_filme_e_similares()
