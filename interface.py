@@ -31,7 +31,7 @@ if st.session_state.user is None:
     # Goal 1: Inverter a ordem das abas (Cadastro primeiro)
     tab_cadastro, tab_login = st.tabs(["👤 Cadastro", "🔑 Login"])
 
-    # --- Aba de Cadastro ---
+    # --- Aba de Cadastro --
     with tab_cadastro:
         st.header("Crie sua conta")
         
