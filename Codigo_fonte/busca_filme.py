@@ -98,17 +98,11 @@ def recomendar_por_similaridade(movieId_base, top_n=10):
         # print(f"Erro inesperado no PNL para movieId {movieId_base}: {e}")
         return []
 
-# --- Função 2: Busca de Título (Fuzzy Matching) ---
 def encontrar_movieid_por_titulo(titulo_query, top_n=1):
-    """
-    Encontra o movieId de um filme dado um título, usando correspondência aproximada.
-    Retorna o movieId (se top_n=1) ou uma lista de movieIds. Retorna None/[] se não encontrar.
-    """
-    if TITULOS_MAP is None or TITULOS_MAP.empty: 
-        return None if top_n == 1 else []
+    if TITULOS_MAP is None:
+        print("Erro! O mapa de títulos não foi carregado.")
+        return None
     
-    # Usa fuzzywuzzy para encontrar os títulos mais próximos
-    # Retorna uma tupla: (titulo_encontrado, score_similaridade, movieId)
     resultados = process.extract(titulo_query, TITULOS_MAP.to_dict(), limit=top_n)
 
     if not resultados:

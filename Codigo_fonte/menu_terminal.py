@@ -1,7 +1,8 @@
 import pandas as pd
 import os
-from . import recomendar 
-from . import busca_filme 
+# MUDANÇA: 'from .' foi alterado para 'from Codigo_fonte'
+from Codigo_fonte import recomendar 
+from Codigo_fonte import busca_filme 
 
 print("Iniciando o Menu Interativo (menu_terminal.py)...")
 

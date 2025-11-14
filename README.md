@@ -68,7 +68,7 @@ python3 Codigo_fonte/machine.py
 ## 5. Executar a Aplicação Principal
 Para iniciar a interface gráfica (GUI) e interagir com o sistema de recomendação (usando o Streamlit):
 
-streamlit run Codigo_fonte/Simple_gui.py
+streamlit run app.py
 
 ## 📦 Estrutura de Entrega (Requisitos da A3)
 
