@@ -48,7 +48,7 @@ def recomendar_por_similaridade(movieId_base, top_n=10):
         print(f"Erro inesperado: {e}")
         return []
 
-def encontrar_movieId_por_titulo(titulo_query, top_n=1):
+def encontrar_movieid_por_titulo(titulo_query, top_n=1):
     if TITULOS_MAP is None:
         print("Erro! O mapa de títulos não foi carregado.")
         return None
